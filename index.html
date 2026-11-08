@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SidelineScout AI</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  :root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  body{background:radial-gradient(1100px 480px at 8% -8%,#12212c 0,transparent 60%),#090c13;color:#e2e8f0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+  .card{background:linear-gradient(180deg,#121722,#0e121b);border:1px solid #1f2736;border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 28px -14px rgba(0,0,0,.7)}
+  .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a94a7;font-weight:600}
+  button,label{transition:background .15s,border-color .15s,transform .05s}button:active{transform:translateY(1px)}
+  :focus-visible{outline:2px solid #34d399;outline-offset:2px}
+  ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#243044;border-radius:8px}
+  .mono{font-variant-numeric:tabular-nums}
+  body.pv{background:#fff!important}
+  body.pv .noprint{display:none!important}
+  body.pv .doc,body.pv .doc *{color:#000!important;background:#fff!important;border-color:#000!important}
+  body.pv .doc .badge,body.pv .doc .cell,body.pv .doc textarea,body.pv .doc .bar{border:1.5px solid #000!important}
+  body.pv .doc .alert{border:1.5px dashed #000!important}
+  body.pv .doc .bar-r{background:#000!important}body.pv .doc .bar-p{background:#9ca3af!important}
+  @media print{
+    @page{size:letter portrait;margin:.4in}
+    body{background:#fff!important}
+    body *{visibility:hidden}
+    .doc,.doc *{visibility:visible}
+    .doc{position:absolute;left:0;top:0;width:100%;padding:0!important;border:0!important}
+    .doc,.doc *{color:#000!important;background:#fff!important;border-color:#000!important;box-shadow:none!important}
+    .doc .badge{border:1.5px solid #000!important;font-weight:800}
+    .doc .cell{border:1.5px solid #000!important;break-inside:avoid;padding:6px!important}
+    .doc .alert{border:1.5px dashed #000!important}
+    .doc .big{font-size:11px!important}
+    .noprint{display:none!important}
+    .doc .bar-r{background:#000!important}.doc .bar-p{background:#9ca3af!important}.doc .bar{border:1px solid #000!important}.doc textarea{border:1px solid #000!important}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo}=React;
+
+const DEMO0=`Qtr,Clock,Down,Dist,Yardline,Hash,Formation,Play,Gain,Motion
+1,11:20,1,10,OWN 25,M,I-Formation,Run - Dive,3,
+1,10:40,2,7,OWN 28,M,Trips Open,Pass - Complete,9,
+1,10:05,1,10,OWN 37,L,Trips Open,Pass - Incomplete,0,
+1,9:30,2,10,OWN 37,L,Spread 2x2,Run - Jet Sweep,18,Jet #4
+1,8:50,1,10,OPP 45,R,I-Formation,Run - Iso,4,
+1,8:10,2,6,OPP 41,R,I-Formation,Pass - Play Action,22,
+1,7:30,1,10,OPP 19,M,Trips Open,Run - Jet Sweep,6,Jet #4
+1,6:50,2,4,OPP 13,M,I-Formation,Run - Dive,2,
+1,6:10,3,2,OPP 11,M,I-Formation,Run - QB Sneak,3,
+2,11:00,1,10,OWN 30,R,Spread 2x2,Pass - Complete,7,
+2,10:20,2,3,OWN 37,R,Trips Open,Pass - Complete,5,
+2,9:40,1,10,OWN 42,M,I-Formation,Run - Counter,5,
+2,9:00,2,5,OWN 47,M,Trips Open,Pass - Incomplete,0,
+2,8:20,3,5,OWN 47,M,Trips Open,Pass - Complete,8,
+2,7:40,1,10,OPP 45,L,Spread 2x2,Run - Jet Sweep,16,Jet #4
+2,1:50,1,10,OPP 48,M,Trips Open,Pass - Complete,14,
+2,1:20,2,10,OPP 34,R,Trips Open,Pass - Incomplete,0,
+2,1:05,3,10,OPP 34,R,Trips Open,Pass - Complete,12,
+2,0:40,1,10,OPP 22,M,Trips Open,Pass - Sack,-7,
+3,10:30,1,10,OWN 20,M,I-Formation,Run - Iso,6,
+3,9:50,2,4,OWN 26,M,I-Formation,Run - Dive,3,
+3,9:10,3,1,OWN 29,M,I-Formation,Run - QB Sneak,2,
+3,8:20,1,10,OWN 31,L,Spread 2x2,Pass - Complete,11,
+3,7:30,2,9,OWN 42,L,Trips Open,Pass - Incomplete,0,
+3,6:50,3,9,OWN 42,L,Trips Open,Pass - Complete,31,
+4,5:00,1,10,OPP 18,R,I-Formation,Run - Counter,3,
+4,4:20,2,7,OPP 15,R,Trips Open,Pass - Incomplete,0,
+4,3:40,3,7,OPP 15,R,Trips Open,Pass - Complete,9,
+4,3:00,1,4,OPP 4,M,I-Formation,Run - Dive,3,
+4,1:45,2,1,OPP 1,M,I-Formation,Run - Dive,1,`;
+const DEMO=(()=>{let r=0,a=0;const D=['Right','Right','Left','Right','Middle','Right','Left','Right','Right','Middle','Right','Left','Right','Right'],R=['32','32','24','4','32'],P=['11','7','11','88','7'];return DEMO0.split('\n').map((l,i)=>i===0?l+',Dir,Player':l+','+(/,Run/.test(l)?D[r++%D.length]+','+(/Jet/.test(l)?'4':R[r%R.length]):','+P[a++%P.length])).join('\n');})();
+
+function parseCSV(t){
+  return t.split(/\r?\n/).filter(l=>l.trim()).map(l=>{
+    const out=[];let cur='',q=false;
+    for(let i=0;i<l.length;i++){const c=l[i];
+      if(c==='"'){ if(q&&l[i+1]==='"'){cur+='"';i++;} else q=!q; }
+      else if(c===','&&!q){out.push(cur.trim());cur='';}
+      else cur+=c;}
+    out.push(cur.trim());return out;});
+}
+const toGo=y=>{const s=String(y).toUpperCase(),n=parseInt((s.match(/\d+/)||[50])[0]);return (/OWN/.test(s)||/^\s*-/.test(s))?100-n:n;};
+const clockSec=c=>{const m=String(c||'').match(/(\d+):(\d+)/);return m?(+m[1])*60+(+m[2]):null;};
+const kind=t=>{t=t.toLowerCase();
+  if(/pass|inc|comp|sack|screen|rpo|scramble/.test(t))return'PASS';
+  if(/run|rush|sweep|keeper|sneak|dive|iso|counter|draw|option|qb|power|trap|zone/.test(t))return'RUN';
+  return null;};
+
+const nd=s=>/left/i.test(s)?'Left':/right/i.test(s)?'Right':/mid|cent/i.test(s)?'Middle':'';
+function mapCols(h){const ix=re=>h.findIndex(x=>re.test(x));
+  return {q:ix(/^q(tr|uarter)?$|^qtr|quarter/),clk:ix(/clock|time/),dn:ix(/^(dn|down)$|^down/),ds:ix(/^(dist|distance)|to go|togo/),
+  yl:ix(/yard ?ln|yard ?line|^yl|ball on|field pos|^yard$/),hash:ix(/hash/),form:ix(/off(ense)? ?form|formation|^form/),
+  type:ix(/play type|^play$|off play|^type/),res:ix(/^result|^rslt|outcome/),gain:ix(/gn\/ls|gn ?ls|gain|^yds|^net/),
+  mot:ix(/motion|note|tag/),dir:ix(/play ?dir|^dir|direction|^side|gap/),pl:ix(/carrier|rusher|ball ?car|target|^player|^no\.?$|^#$/),odk:ix(/^odk$/)};}
+function toPlays(text,gi=0){
+  const rows=parseCSV(text);if(rows.length<2)return[];
+  const c=mapCols(rows[0].map(x=>x.toLowerCase()));
+  const g=(r,k)=>c[k]>=0?(r[c[k]]||''):'';
+  return rows.slice(1).filter(r=>c.odk<0||/^o/i.test(r[c.odk]||'')).map((r,i)=>{
+    const type=(g(r,'type')+' '+g(r,'res')).trim(),k=kind(type),down=parseInt(g(r,'dn')),dist=parseInt(g(r,'ds')),yl=g(r,'yl');
+    return {id:gi*10000+i,g:gi,q:parseInt(g(r,'q'))||1,clk:clockSec(g(r,'clk')),clkTxt:g(r,'clk'),down,dist,yl,toGo:toGo(yl||50),hash:(g(r,'hash')||'?').trim().toUpperCase().slice(0,1),form:g(r,'form')||'Unknown',type:type||'-',k,gain:parseInt(g(r,'gain'))||0,mot:g(r,'mot'),dir:nd(g(r,'dir')||type),pl:g(r,'pl').replace(/^#/,'').trim()};
+  }).filter(p=>p.k&&p.down>=1&&p.down<=4&&!isNaN(p.dist));}
+const pct=(a,b)=>b?Math.round(100*a/b):0;
+const stat=l=>{const n=l.length,r=l.filter(p=>p.k==='RUN').length;return{n,run:pct(r,n),pass:n?100-pct(r,n):0};};
+const topOf=(l,f)=>{const m={};l.forEach(p=>{const k=f(p);if(k)m[k]=(m[k]||0)+1;});
+  const e=Object.entries(m).sort((a,b)=>b[1]-a[1])[0];return e?{key:e[0],n:e[1]}:null;};
+
+const SITS=[
+ {id:'1st',label:'1st & 10',f:p=>p.down===1,run:'4-3 Over, 8-man box. Fit A/B gaps, spill force outside.',pass:'Nickel 4-2-5, Cover 3 sky. Squeeze hooks, rally to flat.',bal:'Base 4-3, mix Cover 3 / quarters. Stay gap-sound.'},
+ {id:'2S',label:'2nd & Short (1–3)',f:p=>p.down===2&&p.dist<=3,run:'Goal-line-lite 5-2 look, tight box, safeties down.',pass:'Nickel man-free, press WRs, jump short routes.',bal:'4-3 Under, Cover 1. Don\'t bite on PA.'},
+ {id:'2L',label:'2nd & Long (7+)',f:p=>p.down===2&&p.dist>=7,run:'Walk LB up, slant front to strength, expect draw/counter.',pass:'Dime, 4-man rush w/ stunt, Cover 2 / quarters match.',bal:'Nickel 4-2-5 Cover 3, play the sticks.'},
+ {id:'3S',label:'3rd & Short (1–3)',f:p=>p.down===3&&p.dist<=3,run:'Bear / 46 front, hat on every gap, win the line of scrimmage.',pass:'Nickel man, press, rob the short hook.',bal:'4-4 Stack, safeties at 7 yds. QB sneak alert.'},
+ {id:'3M',label:'3rd & Medium (4–7)',f:p=>p.down===3&&p.dist>=4&&p.dist<=7,run:'Nickel w/ run fits, QB contain.',pass:'Nickel Cover 1 robber, pressure from the nickel.',bal:'Quarters match, simulated pressure.'},
+ {id:'3L',label:'3rd & Long (8+)',f:p=>p.down===3&&p.dist>=8,run:'Hold gaps, draw/screen alert, rush lanes.',pass:'Dime, 4-man rush + spy, Cover 2 Man / deep shell.',bal:'Dime Cover 4, rush 4, no easy throw short of sticks.'},
+ {id:'RZ',label:'Red Zone (20–6)',f:p=>p.toGo<=20&&p.toGo>5,run:'Tight 5-2, bring safeties into the box, force outside.',pass:'Nickel Cover 0/1 blitz packages, bracket the best WR.',bal:'4-3 Cover 1, compress field, rotate LBs.'},
+ {id:'GL',label:'Goal Line (5 & in)',f:p=>p.toGo<=5,run:'6-2 Goal Line, penetrate gaps, safeties fill off-tackle.',pass:'Goal-line man, bump TE/slot, watch PA fade.',bal:'5-3 Goal Line, penetrate and contain.'},
+ {id:'2M',label:'Two-Minute / Crunch',f:p=>(p.q===2||p.q===4)&&p.clk!==null&&p.clk<=120,run:'Keep eight in the box, tackle in bounds, make them use clock.',pass:'Dime Cover 4 / prevent, rush 4, keep everything in front.',bal:'Nickel quarters, rush 4, tackle underneath and in bounds.'},
+];
+
+function tell(l,all){
+  if(!l.length)return'No snaps in this situation. Default to base call.';
+  const m=topOf(l.filter(p=>p.mot),p=>p.mot);
+  if(m&&m.n>=2){const runs=l.filter(p=>p.mot===m.key&&p.k==='RUN').length;
+    return `Watch ${m.key} motion: ${runs} of ${m.n} snaps were runs.`;}
+  const f=topOf(l,p=>p.form);const fl=l.filter(p=>p.form===f.key);const s=stat(fl);
+  return `${f.key} (${f.n}/${l.length} snaps): ${Math.max(s.run,s.pass)}% ${s.run>=s.pass?'run':'pass'}.`;
+}
+
+const I=({d,s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const IC={up:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
+  print:"M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
+  zap:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",shield:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  target:"M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0-20 0M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0-10 0",
+  flag:"M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7",
+  db:"M3 5c0-1.7 4-3 9-3s9 1.3 9 3-4 3-9 3-9-1.3-9-3zM3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"};
+
+const Badge=({k})=><span className={`badge inline-block px-2 py-0.5 rounded text-[11px] font-extrabold tracking-wide ${k==='RUN'?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50':'bg-sky-500/20 text-sky-300 border border-sky-500/50'}`}>{k}</span>;
+const Bar=({run,pass,h='h-2.5'})=><div className={`flex ${h} bar rounded-full overflow-hidden bg-slate-800`}><div style={{width:run+'%'}} className="bar-r bg-emerald-400"/><div style={{width:pass+'%'}} className="bar-p bg-sky-400"/></div>;
+const Pcts=({s})=><div className="flex items-end justify-between mono"><span><span className="text-3xl font-extrabold tracking-tight text-emerald-300">{s.run}%</span> <span className="lbl">Run</span></span><span className="text-right"><span className="lbl">Pass</span> <span className="text-3xl font-extrabold tracking-tight text-sky-300">{s.pass}%</span></span></div>;
+
+function Card({title,icon,children,onClick}){
+  return <div onClick={onClick} title={onClick?'Click to view these plays':undefined} className={'card p-4 '+(onClick?'cursor-pointer hover:border-emerald-400 transition':'')}>
+    <div className="flex items-center gap-2 lbl mb-3"><span className="text-emerald-400"><I d={IC[icon]}/></span>{title}</div>{children}</div>;
+}
+
+function App(){
+  const [games,setGames]=useState(()=>[{id:0,name:'Sample game',plays:toPlays(DEMO,0)}]);const [gsel,setGsel]=useState('all');const [map,setMap]=useState(null);const [docm,setDocm]=useState('sheet');const nid=React.useRef(1);
+  const plays=useMemo(()=>games.filter(g=>gsel==='all'||g.id===gsel).flatMap(g=>g.plays),[games,gsel]);
+  const setPlays=a=>setGames(a.length?[{id:0,name:'Game',plays:a}]:[]);const isSample=games.length===1&&games[0].name==='Sample game';
+  const [opp,setOpp]=useState('Westview Wildcats');
+  const [date,setDate]=useState('2026-10-30');
+  const [raw,setRaw]=useState('');
+  const [tab,setTab]=useState('All');
+  const [err,setErr]=useState('');const [sel,setSel]=useState(null);const [help,setHelp]=useState(false);const [toast,setToast]=useState('');
+  const [notes,setNotes]=useState(()=>{try{return JSON.parse(localStorage.getItem('ss-notes')||'{}');}catch(e){return{};}});
+  const say=m=>{setToast(m);setTimeout(()=>setToast(''),4500);};
+  const setNote=(id,v)=>{const n={...notes,[id]:v};setNotes(n);try{localStorage.setItem('ss-notes',JSON.stringify(n));}catch(e){}};
+  const go=t=>{setTab(t);setTimeout(()=>document.getElementById('log')?.scrollIntoView({behavior:'smooth'}),60);};
+  const onFile=e=>{readFiles(e.target.files,false);e.target.value='';};
+  const [pv,setPv]=useState(false);
+  React.useEffect(()=>{document.body.classList.toggle('pv',pv);if(pv)window.scrollTo(0,0);},[pv]);
+  const doPrint=()=>{setDocm('sheet');setPv(true);setTimeout(()=>{try{window.print();}catch(e){say('Press Ctrl/Cmd+P to print');}},500);};
+  const lib=(notes._lib||'').split('\n').map(x=>x.trim()).filter(Boolean);const callOf=c=>notes[c.id+'c']!==undefined?notes[c.id+'c']:c.call;
+  const doHandout=()=>{setDocm('handout');setPv(true);setTimeout(()=>{try{window.print();}catch(e){}},500);};
+  const savePdf=async()=>{try{const dl=typeof claude!=='undefined'?await claude.use('downloads'):null;
+    const J=window.jspdf&&window.jspdf.jsPDF;if(!J){say('The PDF tool did not load. Use Print Clipboard Sheet instead.');return;}
+    const d=new J({unit:'pt',format:'letter'});const W=612,M=28;
+    d.setFont('helvetica','bold');d.setFontSize(16);d.text('Defensive Call Sheet vs. '+(opp||'Opponent'),M,40);
+    d.setFont('helvetica','normal');d.setFontSize(9);d.text(date+'  |  '+plays.length+' snaps'+(isSample?' (SAMPLE DATA)':'')+'  |  Run '+ov.run+'% / Pass '+ov.pass+'%'+(runs.length?'  |  Runs: '+dirs.map(x=>x[0]+' '+x[1]+'%').join(', '):''),M,55);
+    const cw=(W-2*M-16)/3,ch=216,y0=70;
+    cells.forEach((c,i)=>{const x=M+(i%3)*(cw+8),y=y0+Math.floor(i/3)*(ch+8);d.setLineWidth(1);d.rect(x,y,cw,ch);let ty=y+14;
+      d.setFont('helvetica','bold');d.setFontSize(10);d.text(c.label,x+6,ty);ty+=13;
+      d.setFont('helvetica','normal');d.setFontSize(9);d.text(c.st.n?'RUN '+c.st.run+'%   PASS '+c.st.pass+'%':'No data',x+6,ty);ty+=12;
+      [['CALL: '+callOf(c),5],['TELL: '+c.tell,4],['NOTE: '+(notes[c.id]||''),5]].forEach(([t,mx],bi)=>{d.setFontSize(8.5);d.setFont('helvetica',bi===1?'bold':'normal');const lines=d.splitTextToSize(t,cw-12).slice(0,mx);d.text(lines,x+6,ty);ty+=lines.length*10+6;});});
+    const fn='call-sheet-'+(opp||'opponent').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.pdf';if(dl)await dl.save({filename:fn,data:d.output('arraybuffer')});else d.save(fn);
+    say('PDF ready.');
+  }catch(e){if(!e||e.code!=='declined')say('Could not save the PDF ('+(e&&e.code?e.code:'error')+').');}};
+  const fb=t=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}a.remove();say(ok?'Call sheet copied':'Copy was blocked. Use Print instead.');};
+  const copySheet=()=>{const t='DEFENSIVE CALL SHEET vs '+opp+' ('+date+')\nRun '+ov.run+'% / Pass '+ov.pass+'%\n\n'+cells.map(c=>c.label+' ['+c.st.n+' snaps] RUN '+c.st.run+'% / PASS '+c.st.pass+'%\n  Call: '+(notes[c.id+'c']!==undefined?notes[c.id+'c']:c.call)+'\n  Tell: '+c.tell+(notes[c.id]?'\n  Note: '+notes[c.id]:'')).join('\n\n');try{navigator.clipboard.writeText(t).then(()=>say('Call sheet copied'),()=>fb(t));}catch(e){fb(t);}};
+
+  const load=(txt,name,add)=>{
+    const gi=add?nid.current++:(nid.current=1,0);const p=toPlays(txt,gi);
+    const hdr=(parseCSV(txt)[0]||[]),m=mapCols(hdr.map(x=>x.toLowerCase()));setMap({hdr,m});
+    if(!p.length){setErr('No plays found. Check the column check below, or tap Load Sample Game to see the format.');return;}
+    setErr('');const gname=name||(txt===DEMO?'Sample game':'Game '+(gi+1));
+    setGames(prev=>add?[...prev,{id:gi,name:gname,plays:p}]:[{id:0,name:gname,plays:p}]);setGsel('all');
+    if(!add&&name)setOpp(name);setTab('All');setSel(null);
+    const miss=[['Formation','form'],['Yardline','yl'],['Clock','clk'],['Direction','dir'],['Player','pl']].filter(([n,k])=>m[k]<0).map(x=>x[0]);
+    say('Loaded '+p.length+' plays'+(add?' as a new game':'')+'.'+(miss.length?' Not found: '+miss.join(', ')+'.':''));
+  };
+  const readFiles=async(fl,add)=>{let first=!add;for(const f of Array.from(fl||[])){if(!/\.(csv|txt)$/i.test(f.name)){setErr('Please choose .csv files.');continue;}const t=await f.text();load(t,f.name.replace(/\.(csv|txt)$/i,'').replace(/[_-]+/g,' '),!first);first=false;}};
+
+  const ov=stat(plays);
+  const third=plays.filter(p=>p.down===3);
+  const bands=[['Short 1–3',p=>p.dist<=3],['Med 4–7',p=>p.dist>=4&&p.dist<=7],['Long 8+',p=>p.dist>=8]]
+    .map(([n,f])=>[n,stat(third.filter(f))]);
+  const rz=stat(plays.filter(p=>p.toGo<=20));
+  const tf=topOf(plays,p=>p.form);
+  const runs=plays.filter(p=>p.k==='RUN'&&p.dir);const dirs=['Left','Middle','Right'].map(d=>[d,pct(runs.filter(p=>p.dir===d).length,runs.length)]);const bestDir=[...dirs].sort((a,b)=>b[1]-a[1])[0];
+  const tfS=tf?stat(plays.filter(p=>p.form===tf.key)):null;
+
+  const cells=useMemo(()=>SITS.map(s=>{
+    const l=plays.filter(s.f),st=stat(l);
+    const call=!st.n?'No data: base defense':st.run>=60?s.run:st.pass>=60?s.pass:s.bal;
+    const alert=st.n&&Math.max(st.run,st.pass)>=70&&st.n>=3;
+    const gs=[...new Set(l.map(p=>p.g))],lean=x=>x.run>=x.pass?1:0;const agree=gs.filter(gi=>lean(stat(l.filter(p=>p.g===gi)))===lean(st)).length;
+    const pl=l.filter(p=>p.pl),w=topOf(pl,p=>p.pl);
+    return{...s,st,call,tell:tell(l,plays),alert,games:gs.length,agree,who:w&&w.n>=2?'#'+w.key+' gets '+w.n+' of '+pl.length+' touches':''};
+  }),[plays]);
+
+  const shown=plays.filter(p=>tab==='All'||(tab==='3rd Down'&&p.down===3)||(tab==='Red Zone'&&p.toGo<=20)||(tab==='Explosive'&&p.gain>15));
+
+  return <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+    <header className="noprint sticky top-0 z-40 -mx-4 md:-mx-6 px-4 md:px-6 py-3 backdrop-blur bg-[#090c13]/80 border-b border-[#1f2736] flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-emerald-400 text-slate-900 grid place-items-center"><I d={IC.shield} s={22}/></div>
+        <div><h1 className="text-xl font-extrabold tracking-tight">SidelineScout <span className="text-emerald-400">AI</span></h1>
+        <p className="text-xs text-slate-400">Situational defensive call sheets from Hudl / GameChanger play logs</p></div>
+      </div>
+      <button onClick={doPrint} className="flex items-center gap-2 bg-white hover:bg-slate-200 text-slate-900 font-semibold px-4 py-2 rounded-lg text-sm shadow"><I d={IC.print}/>Print Clipboard Sheet</button>
+    </header>
+    <div className='noprint grid sm:grid-cols-3 gap-3'>{[['1','Load game film','Upload the opponent CSV or tap Load Sample Game.'],['2','Study the tendencies','Click any box on the sheet to see the exact plays behind it.'],['3','Print your sheet','Add coach notes, then print one page for the sideline.']].map(([n,t,d])=><div key={n} className='flex gap-3 items-start card p-3'><div className='shrink-0 w-7 h-7 rounded-full bg-emerald-400 text-slate-900 font-black grid place-items-center'>{n}</div><div><div className='font-bold text-sm'>{t}</div><div className='text-xs text-slate-400'>{d}</div></div></div>)}</div>
+    <div className='noprint flex flex-wrap gap-2'><button onClick={()=>setHelp(!help)} className='bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 rounded-lg text-sm font-semibold'>{help?'Hide help':'How to use / get your CSV'}</button><button onClick={copySheet} disabled={!plays.length} className='bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-40 px-3 py-2 rounded-lg text-sm font-semibold'>Copy sheet as text</button><button onClick={savePdf} title='Saves a one-page black-and-white PDF of the call sheet with the run/pass split, run direction, each call and tell, and your notes.' disabled={!plays.length} className='bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-40 px-3 py-2 rounded-lg text-sm font-semibold'>Download 1-page PDF</button><button onClick={doHandout} disabled={!plays.length} className='bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-40 px-3 py-2 rounded-lg text-sm font-semibold'>Player handout</button><span className='lbl self-center ml-2'>Jump to</span><button onClick={()=>document.getElementById('fieldmap')?.scrollIntoView({behavior:'smooth'})} className='text-xs text-slate-400 hover:text-white underline underline-offset-4 px-1'>Field map</button><button onClick={()=>document.getElementById('sheet')?.scrollIntoView({behavior:'smooth'})} className='text-xs text-slate-400 hover:text-white underline underline-offset-4 px-1'>Call sheet</button><button onClick={()=>document.getElementById('log')?.scrollIntoView({behavior:'smooth'})} className='text-xs text-slate-400 hover:text-white underline underline-offset-4 px-1'>Play log</button><span className='text-xs text-slate-400 self-center'>PDF = the 1-page call sheet (run/pass split, run direction, each situation's call, tell and your notes) as a file to save or email.</span></div>
+    {help&&<div className='noprint card p-4 text-sm text-slate-300 space-y-2'><p><b className='text-slate-100'>Getting the file:</b> export your opponent's play-by-play or breakdown data as a CSV from Hudl or GameChanger (look for an Export or Download option on the game or breakdown data).</p><p><b className='text-slate-100'>Needed columns:</b> Down, Dist, Yardline, Formation, Play, Gain. Optional: Qtr, Clock, Hash, Motion. Yardlines like OWN 35 or OPP 18 work. Tap See CSV example below to view the format.</p><p><b className='text-slate-100'>Reading the sheet:</b> green = run, blue = pass. An orange ALERT means a strong tendency (70%+ over 3 or more snaps). Notes you type are saved on this device and print on the sheet. Download 1-page PDF saves the same call sheet as a file you can email or print later.</p></div>}
+    {!plays.length&&<div className='noprint rounded-xl border-2 border-dashed border-slate-600 p-8 text-center text-slate-400'>No game loaded yet. Upload a CSV or tap <b className='text-emerald-400'>Load Sample Game</b> to see how it works.</div>}
+    {pv&&<div className='pvbar sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-orange-500 text-slate-900 font-bold px-4 py-3 rounded-lg'><span>Print view. If the print dialog did not open, press Ctrl/Cmd+P.</span><span className='flex gap-2'><button onClick={()=>{try{window.print();}catch(e){}}} className='bg-slate-900 text-white px-3 py-1.5 rounded-md text-sm'>Print again</button><button onClick={()=>setPv(false)} className='bg-white px-3 py-1.5 rounded-md text-sm'>Back to editing</button></span></div>}
+    {toast&&<div className='noprint fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-400 text-slate-900 font-bold px-4 py-2 rounded-lg shadow-lg text-sm'>{toast}</div>}
+
+    {games.length>0&&<div className={'noprint rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3 '+(isSample?'border-amber-500/50 bg-amber-500/10':'border-emerald-500/40 bg-emerald-500/10')}><div><div className='font-bold text-sm'>{isSample?'Showing SAMPLE data (not a real opponent). Upload your own CSV to replace it.':'Your data is loaded: '+games.length+(games.length>1?' games':' game')}</div><div className='text-xs text-slate-300 mt-0.5'>{games.map(g=>g.name+' ('+g.plays.length+' plays)').join(' \u00b7 ')}{games.length>1?' \u00b7 Viewing: '+(gsel==='all'?'all games combined':(games.find(g=>g.id===gsel)||{}).name):''}</div></div><div className='text-right mono'><div className='text-2xl font-extrabold leading-none'>{plays.length}</div><div className='lbl'>plays analyzed</div></div></div>}
+    <section className="noprint grid md:grid-cols-2 gap-4">
+      <div className="card p-4 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <label onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();readFiles(e.dataTransfer.files,false);}} className="flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 rounded-lg text-sm font-semibold"><I d={IC.up}/>Upload CSV
+            <input type="file" accept=".csv" multiple className="hidden" onChange={onFile}/></label>
+          <label className='flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 rounded-lg text-sm font-semibold'>+ Add another game<input type='file' accept='.csv' multiple className='hidden' onChange={e=>{readFiles(e.target.files,true);e.target.value='';}}/></label><button onClick={()=>{load(DEMO);setOpp('Westview Wildcats');setDate('2026-10-30');}} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-3 py-2 rounded-lg text-sm font-bold"><I d={IC.db}/>Load Sample Game</button>
+        </div>
+        <textarea value={raw} onChange={e=>setRaw(e.target.value)} rows={4} placeholder="…or paste raw CSV here (header row required: Qtr, Clock, Down, Dist, Yardline, Hash, Formation, Play, Gain, Motion)" className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs font-mono focus:outline-none focus:border-emerald-400"/>
+        <button onClick={()=>load(raw)} disabled={!raw.trim()} className="bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-40 px-3 py-1.5 rounded-lg text-sm font-semibold">Analyze Pasted CSV</button> <button onClick={()=>setRaw(DEMO.split('\n').slice(0,4).join('\n'))} className='bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-sm font-semibold'>See CSV example</button> <button onClick={()=>{setPlays([]);setRaw('');setSel(null);setErr('');say('Cleared');}} className='bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-sm font-semibold'>Clear</button>
+        {err&&<p className="text-orange-400 text-sm">{err}</p>}
+        {games.length>1&&<div className='flex flex-wrap items-center gap-2'><span className='lbl'>Games</span><button onClick={()=>setGsel('all')} className={'px-2.5 py-1 rounded-full text-xs font-semibold '+(gsel==='all'?'bg-emerald-400 text-slate-900':'bg-white/5 border border-white/10')}>All {games.length} combined</button>{games.map(g=><span key={g.id} className={'inline-flex items-center rounded-full text-xs font-semibold '+(gsel===g.id?'bg-emerald-400 text-slate-900':'bg-white/5 border border-white/10')}><button onClick={()=>setGsel(g.id)} className='pl-2.5 pr-1 py-1'>{g.name}</button><button onClick={()=>{setGames(games.filter(x=>x.id!==g.id));setGsel('all');}} className='pr-2 py-1 opacity-60 hover:opacity-100' title='Remove this game'>x</button></span>)}</div>}
+        {map&&<details className='text-xs text-slate-400'><summary className='cursor-pointer font-semibold text-slate-300'>Column check: what we found in your file</summary><div className='mt-2 flex flex-wrap gap-1.5'>{[['Down','dn'],['Distance','ds'],['Yardline','yl'],['Formation','form'],['Play type','type'],['Gain','gain'],['Hash','hash'],['Direction','dir'],['Player','pl'],['Clock','clk'],['Motion','mot']].map(([n,k])=><span key={k} className={'px-2 py-1 rounded-md border '+(map.m[k]>=0?'border-emerald-500/40 text-emerald-300':'border-slate-600 text-slate-500')}>{map.m[k]>=0?'\u2713 '+n+' = '+map.hdr[map.m[k]]:'\u2717 '+n+' not found'}</span>)}</div></details>}
+      </div>
+      <div className="card p-4 grid grid-cols-2 gap-3 content-start">
+        <label className="col-span-2 text-xs text-slate-400">Opponent
+          <input value={opp} onChange={e=>setOpp(e.target.value)} className="mt-1 w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-base font-bold text-slate-100"/></label>
+        <label className="text-xs text-slate-400">Game Date
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-1 w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100"/></label>
+        <div className="text-xs text-slate-400">Snaps Analyzed
+          <div className="mt-1 text-3xl font-black text-emerald-400 mono">{plays.length}</div></div>
+      </div>
+    </section>
+
+    <section className="noprint grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card title="Run vs. Pass" icon="zap"><div className="space-y-2"><Pcts s={ov}/><Bar run={ov.run} pass={ov.pass} h="h-4"/><p className="text-xs text-slate-400">{plays.filter(p=>p.k==='RUN').length} runs / {plays.filter(p=>p.k==='PASS').length} passes</p></div></Card>
+      <Card title="3rd Down by Distance" icon="target" onClick={()=>go('3rd Down')}><div className="space-y-2.5">
+        {bands.map(([n,s])=><div key={n}><div className="flex justify-between text-xs mb-1"><span className="text-slate-300">{n}</span><span className="mono text-slate-400">{s.n?`${s.run}% R / ${s.pass}% P`:'no snaps'}</span></div><Bar run={s.run} pass={s.pass} h="h-2"/></div>)}</div></Card>
+      <Card title="Red Zone (Inside 20)" icon="flag" onClick={()=>go('Red Zone')}><div className="space-y-2"><Pcts s={rz}/><Bar run={rz.run} pass={rz.pass} h="h-4"/><p className="text-xs text-slate-400">{rz.n} snaps</p></div></Card>
+      <Card title="Top Formation" icon="shield"><div className="text-2xl font-black text-orange-400 leading-tight">{tf?tf.key:'—'}</div>
+        {tf&&<p className="text-sm text-slate-300 mt-1">{pct(tf.n,plays.length)}% of snaps · {tfS.pass>=tfS.run?`${tfS.pass}% pass`:`${tfS.run}% run`}</p>}</Card>
+    </section>
+
+    {plays.length>0&&<section id='fieldmap' className='noprint card p-4'><div className='lbl mb-3'>Field Map: where they run and pass{plays.every(p=>p.hash==='?')&&<span className='normal-case tracking-normal text-amber-400'> (no hash column found in this file, so the map is empty)</span>}</div><div className='grid gap-1.5' style={{gridTemplateColumns:'110px repeat(3,1fr)'}}><div/>{['Left hash','Middle','Right hash'].map(h=><div key={h} className='lbl text-center'>{h}</div>)}{[['Inside 20',p=>p.toGo<=20],['21-50 to goal',p=>p.toGo>20&&p.toGo<=50],['Midfield (51-80)',p=>p.toGo>50&&p.toGo<=80],['Own territory (81+)',p=>p.toGo>80]].map(([n,f])=><React.Fragment key={n}><div className='text-xs text-slate-400 self-center'>{n}</div>{['L','M','R'].map(h=>{const l=plays.filter(p=>f(p)&&p.hash===h),x=stat(l);return <div key={h} className='rounded-lg p-2 text-center border border-slate-700' style={{background:l.length?(x.run>=x.pass?'rgba(52,211,153,':'rgba(56,189,248,')+(0.08+Math.max(x.run,x.pass)/100*0.35)+')':'rgba(255,255,255,.02)'}}>{l.length?<><div className='mono font-bold text-sm'>{Math.max(x.run,x.pass)}% {x.run>=x.pass?'RUN':'PASS'}</div><div className='text-[11px] text-slate-400'>{l.length} plays</div></>:<div className='text-[11px] text-slate-600'>no plays</div>}</div>;})}</React.Fragment>)}</div></section>}
+    {pv&&docm==='handout'&&(()=>{const F=id=>cells.find(c=>c.id===id),ln=c=>c&&c.st.n?(c.st.run>=c.st.pass?'RUN':'PASS'):'NO DATA';
+      return <section className='doc card p-6 space-y-4'><div className='lbl'>Player handout</div><h2 className='text-3xl font-extrabold'>What to expect vs. {opp}</h2>
+      <div className='text-sm'>Based on {plays.length} plays{isSample?' (SAMPLE DATA)':''}.</div><div className='text-lg'>Overall they run {ov.run}% and pass {ov.pass}%. Top formation: <b>{tf?tf.key:'?'}</b>.{runs.length>0&&<> Runs go Left {dirs[0][1]}%, Middle {dirs[1][1]}%, Right {dirs[2][1]}%.</>}</div>
+      <div className='grid grid-cols-2 gap-2 text-base'>{cells.map(c=><div key={c.id} className='cell rounded-lg border p-2'><b>{c.label}</b>: {ln(c)}{c.st.n?' '+Math.max(c.st.run,c.st.pass)+'%':''}</div>)}</div></section>;})()}
+    <section id="sheet" className={'card p-5 doc '+(pv&&docm==='handout'?'noprint':'')}>
+      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-700 pb-3 mb-4">
+        <div><div className="text-[11px] uppercase tracking-[.25em] text-slate-400">Coach's Clipboard · Defensive Call Sheet</div>
+          <div className="text-2xl font-black">vs. {opp||'Opponent'}</div></div>
+        <div className="text-right text-sm text-slate-300 mono">{date} · {plays.length} snaps from {gsel==='all'?games.length:1} game{(gsel==='all'?games.length:1)!==1?'s':''}{isSample?' (SAMPLE DATA)':''} · Run {ov.run}% / Pass {ov.pass}%</div>
+      </div>
+      {runs.length>0&&<div className='mb-3 rounded-xl border border-slate-700 bg-slate-900/70 p-3.5 text-sm'><div className='flex flex-wrap items-center justify-between gap-2 font-bold'><span>RUN DIRECTION <span className='font-normal text-slate-400'>({runs.length} runs)</span></span>{dirs.map(([d,v])=><span key={d} className='mono'>{d} {v}%</span>)}</div><div className='alert big mt-2 rounded-md px-2 py-1.5 border border-slate-600 text-[13px]'><span className='font-extrabold'>{bestDir[1]>=50?'ALERT: ':'TELL: '}</span>{bestDir[1]>=50?'Shade the front toward '+bestDir[0]+': '+bestDir[1]+'% of runs go that way.':'No strong run direction. Stay balanced.'}</div></div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {cells.map(c=><div key={c.id} style={{borderLeftWidth:3,borderLeftColor:c.st.n?(c.alert?'#f59e0b':c.st.run>=c.st.pass?'#34d399':'#38bdf8'):'#334155'}} className={`cell rounded-xl border bg-slate-900/70 p-3.5 flex flex-col gap-2.5 ${sel===c.id?'border-emerald-400 ring-2 ring-emerald-400/50':'border-slate-700'}`}>
+          <div className="flex items-center justify-between"><h3 className="font-bold text-[15px] tracking-tight">{c.label}</h3>
+            </div>
+          {c.st.n?<><Pcts s={c.st}/><Bar run={c.st.run} pass={c.st.pass}/></>:<div className="text-sm text-slate-500">No tendency data</div>}
+          {c.games>1&&<div className='big text-[12px] text-slate-400'>{c.agree===c.games?'Held in all '+c.games+' games':'Held in '+c.agree+' of '+c.games+' games'+(c.agree<=1?' (could be one-game noise)':'')}</div>}{c.who&&<div className='big text-[12px] text-slate-300'>Ball: {c.who}</div>}{lib.length>0&&<select value='' onChange={e=>{if(e.target.value)setNote(c.id+'c',e.target.value);}} className='noprint bg-slate-900 border border-slate-700 rounded-md text-xs p-1 text-slate-300'><option value=''>Pick from my calls...</option>{lib.map(x=><option key={x} value={x}>{x}</option>)}</select>}
+          <div className='big text-[13px]'><span className='font-bold text-emerald-300'>CALL: </span><textarea value={notes[c.id+'c']!==undefined?notes[c.id+'c']:c.call} onChange={e=>setNote(c.id+'c',e.target.value)} rows={3} style={{fieldSizing:'content'}} className='w-full mt-1 resize-none bg-transparent border border-dashed border-slate-600 rounded-md p-1.5 text-[13px] focus:outline-none focus:border-emerald-400'/>{notes[c.id+'c']!==undefined&&<button onClick={()=>{setNote(c.id+'c',undefined);}} className='noprint text-[11px] text-slate-400 underline'>Reset to suggested call</button>}</div>
+          <div className={`alert big text-[13px] rounded-md px-2 py-1.5 border ${c.alert?'bg-orange-500/15 border-orange-500 text-orange-200':'bg-slate-900/60 border-slate-600 text-slate-300'}`}>
+            <span className="font-extrabold">{c.alert?'ALERT: ':'KEY TELL: '}</span>{c.tell}</div>
+          <textarea value={notes[c.id]||''} onChange={e=>setNote(c.id,e.target.value)} rows={2} placeholder='Coach note…' className='w-full resize-none bg-slate-900 border border-slate-600 rounded-md p-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400'/>
+          <button onClick={()=>{if(sel!==c.id)setTimeout(()=>document.getElementById('study')?.scrollIntoView({behavior:'smooth'}),60);setSel(sel===c.id?null:c.id);}} disabled={!c.st.n} className='noprint text-xs font-bold text-emerald-300 hover:text-emerald-200 disabled:opacity-40 text-left'>{sel===c.id?'Hide plays':'Study these '+c.st.n+' plays →'}</button>
+        </div>)}
+      </div>
+      <p className="text-[10px] text-slate-500 mt-2">Tendencies are based on a small sample; treat 1–3 snaps as a hint, not a rule. Red zone = 20 to 6 yds, goal line = 5 and in.</p>
+    </section>
+
+    <section className='noprint card p-4'><div className='lbl mb-2'>My Call Library</div><p className='text-xs text-slate-400 mb-2'>Type your own defenses, one per line (for example Bear 46). Then pick them from the menu inside any box on the sheet.</p><textarea value={notes._lib||''} onChange={e=>setNote('_lib',e.target.value)} rows={3} placeholder={'Bear 46\nCover 3 Sky\nDime Cover 4'} className='w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-emerald-400'/></section>
+        {sel&&(()=>{const c=cells.find(x=>x.id===sel);if(!c)return null;const l=plays.filter(c.f);return <section id='study' className='noprint card ring-1 ring-emerald-400/40 p-4'><div className='flex flex-wrap items-start justify-between gap-2 mb-3'><div><div className='text-xs uppercase tracking-widest text-emerald-400'>Study</div><h2 className='font-black text-lg'>{c.label}: {c.st.run}% run / {c.st.pass}% pass</h2><p className='text-sm text-slate-300 mt-1'><b>Call:</b> {c.call}</p><p className='text-sm text-orange-300'><b>Tell:</b> {c.tell}</p></div><button onClick={()=>setSel(null)} className='bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-sm font-semibold'>Close</button></div><div className='overflow-x-auto'><table className='w-full text-sm mono'><tbody>{l.map(p=><tr key={p.id} className='border-t border-slate-700/70'><td className='py-1.5 pr-3'>Q{p.q}</td><td className='pr-3'>{p.down} & {p.dist}</td><td className='pr-3'>{p.yl}</td><td className='pr-3 font-sans'>{p.form}</td><td className='pr-3'><Badge k={p.k}/></td><td className='pr-3 font-sans text-slate-400'>{p.type}{p.mot?' · '+p.mot:''}</td><td className={'font-bold '+(p.gain>15?'text-orange-400':p.gain<0?'text-red-400':'')}>{p.gain>0?'+':''}{p.gain}</td></tr>)}</tbody></table></div></section>;})()}
+    <section id='log' className="noprint card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h2 className="font-black text-lg">Play Log</h2>
+        <div className="flex gap-1 bg-slate-900 p-1 rounded-lg">
+          {['All','3rd Down','Red Zone','Explosive'].map(t=><button key={t} onClick={()=>setTab(t)} className={`px-3 py-1.5 rounded-md text-xs font-bold ${tab===t?'bg-emerald-400 text-slate-900':'text-slate-300 hover:bg-slate-700'}`}>{t==='Explosive'?'Explosive (>15)':t}</button>)}
+        </div>
+      </div>
+      <div className="overflow-x-auto max-h-96 overflow-y-auto">
+        <table className="w-full text-sm mono">
+          <thead className="sticky top-0 bg-slate-800 text-xs uppercase text-slate-400"><tr>
+            {['Qtr','Down','Dist','Yardline','Hash','Formation','Type','Play','Gain'].map(h=><th key={h} className="text-left py-2 pr-4 font-semibold">{h}</th>)}</tr></thead>
+          <tbody>{shown.map(p=><tr key={p.id} className="border-t border-slate-700/70 hover:bg-slate-700/30">
+            <td className="py-1.5 pr-4">{p.q}</td><td className="pr-4">{p.down}</td><td className="pr-4">{p.dist}</td><td className="pr-4">{p.yl||'—'}</td><td className="pr-4">{p.hash}</td>
+            <td className="pr-4 font-sans">{p.form}</td><td className="pr-4"><Badge k={p.k}/></td><td className="pr-4 font-sans text-slate-400">{p.type}</td>
+            <td className={`font-bold ${p.gain>15?'text-orange-400':p.gain<0?'text-red-400':'text-slate-200'}`}>{p.gain>0?'+':''}{p.gain}</td></tr>)}
+            {!shown.length&&<tr><td colSpan={9} className="py-6 text-center text-slate-500">No plays match this filter.</td></tr>}</tbody>
+        </table>
+      </div>
+    </section>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
